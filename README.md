@@ -20,15 +20,3 @@ This repository contains a Helm chart for deploying **Grafana Mimir** in monolit
 
 The blog here explains the process of using this helm chart as a demo.
 https://medium.com/@kedarnath93/grafana-mimir-as-a-long-term-storage-for-prometheus-metrics-part-2-2e7561977335
-
-
-## Contributing
-
-Feel free to submit issues and pull requests if you want to contribute to this project. 
-
-## License
-
-This project is licensed under the MIT License.
-```
-
-You can now save this content into your `README.md` file.
