@@ -1,0 +1,100 @@
+minio:
+  auth: 
+    rootUser: minio
+    rootPassword: supersecret
+  args:
+    - "sh"
+    - "-c"
+    - "mkdir -p /data/mimir && minio server /data --console-address=:9001"
+
+
+grafana: 
+  env:
+    GF_AUTH_ANONYMOUS_ENABLED: "true"
+    GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    GF_USERS_DEFAULT_THEME: "light"
+    GF_LOG_MODE: "console"
+    GF_LOG_LEVEL: "critical"
+  service:
+    enabled: true
+    type: ClusterIP   # Change to NodePort or LoadBalancer if needed
+    port: 9000        # Change service port to 9000
+    targetPort: 3000 
+
+
+  extraVolumeMounts:
+    - name: grafana-provisioning-dashboards
+      mountPath: /etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml
+      subPath: provisioning-dashboards.yaml
+      readOnly: true
+    - name: grafana-provisioning-datasources
+      mountPath: /etc/grafana/provisioning/datasources/provisioning-datasources.yaml
+      subPath: provisioning-datasources.yaml
+      readOnly: true
+
+  extraContainerVolumes:
+    - name: grafana-provisioning-dashboards
+      configMap:
+        name: grafana-provisioning-dashboards
+    - name: grafana-provisioning-datasources
+      configMap:
+        name: grafana-provisioning-datasources
+
+    
+
+prometheus:
+  server:
+    defaultFlagsOverride:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --log.level=error
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+  
+    extraVolumeMounts:
+      - name: prometheus-config
+        mountPath: /etc/prometheus/prometheus.yml
+        subPath: prometheus.yml
+        readOnly: true
+      - name: prometheus-rules
+        mountPath: /etc/prometheus/rules.yaml
+        subPath: rules.yaml
+        readOnly: true
+  
+    extraVolumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-rules
+        configMap:
+          name: prometheus-rules
+
+mimir:
+  enabled: true
+  replicas: 3
+  image:
+    repository: grafana/mimir
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8080
+  extraArgs:
+    - "-config.file=/etc/mimir.yaml"
+  volumeMounts:
+    - name: mimir-config
+      mountPath: /etc/mimir.yaml
+      subPath: mimir.yaml
+    - name: alertmanager-fallback-config
+      mountPath: /etc/alertmanager-fallback-config.yaml
+      subPath: alertmanager-fallback-config.yaml
+    - name: mimir-data
+      mountPath: /data
+  volumes:
+    - name: mimir-config
+      configMap:
+        name: mimir-config
+    - name: alertmanager-fallback-config
+      configMap:
+        name: alertmanager-fallback-config
+    - name: mimir-data
+      emptyDir: {}

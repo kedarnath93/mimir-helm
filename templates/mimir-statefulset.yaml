@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mimir
+  labels:
+    app: mimir
+spec:
+  serviceName: mimir-headless
+  replicas: {{ .Values.mimir.replicas }}
+  selector:
+    matchLabels:
+      app: mimir
+  template:
+    metadata:
+      labels:
+        app: mimir
+    spec:
+      containers:
+        - name: mimir
+          image: "{{ .Values.mimir.image.repository }}:{{ .Values.mimir.image.tag }}"
+          args: {{ .Values.mimir.extraArgs }}
+          ports:
+            - containerPort: 8080
+          volumeMounts: {{ toYaml .Values.mimir.volumeMounts | nindent 12 }}
+      volumes: {{ toYaml .Values.mimir.volumes | nindent 8 }}
